@@ -36,7 +36,7 @@ impl Board {
             state: temp,
         }
     }
-    fn get_cell_centers(&self, x: u8, y: u8) -> (f32, f32) {
+    fn get_cell_center(&self, x: u8, y: u8) -> (f32, f32) {
         let top_left_cell: (f32, f32) = (self.x + self.size / 6.0, self.y + self.size / 6.0);
         (
             (x - 1) as f32 * self.size / 3.0 + top_left_cell.0,
@@ -80,11 +80,11 @@ impl Board {
         for (&(cell_x, cell_y), cell_state) in &self.state {
             match cell_state {
                 CellState::Circle => {
-                    let (circle_x, circle_y) = self.get_cell_centers(cell_x, cell_y);
+                    let (circle_x, circle_y) = self.get_cell_center(cell_x, cell_y);
                     draw_circle_lines(circle_x, circle_y, self.size / 6.0 - 10.0, 5.0, DARKBLUE);
                 }
                 CellState::Cross => {
-                    let (cross_x, cross_y) = self.get_cell_centers(cell_x, cell_y);
+                    let (cross_x, cross_y) = self.get_cell_center(cell_x, cell_y);
                     draw_cross(cross_x, cross_y, self.size / 3.0 - 10.0, 5.0, RED);
                 }
                 CellState::Empty => {}
@@ -165,5 +165,17 @@ impl Board {
         let cell_x = self.x + (x - 1) as f32 * cell_size;
         let cell_y = self.y + (y - 1) as f32 * cell_size;
         (cell_x, cell_y, cell_size)
+    }
+    pub fn cell_check(&self, x: f32, y: f32) -> Option<((u8, u8), CellState)> {
+        if x < self.x || x > self.x + self.size || y < self.y || y > self.y + self.size {
+            return None;
+        } else {
+            let cell_x: u8 = ((x - self.x) / (self.size / 3.0)).floor() as u8 + 1;
+            let cell_y: u8 = ((y - self.y) / (self.size / 3.0)).floor() as u8 + 1;
+            return Some((
+                (cell_x, cell_y),
+                *(self.state.get(&(cell_x, cell_y)).unwrap()),
+            ));
+        }
     }
 }
