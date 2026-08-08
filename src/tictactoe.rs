@@ -160,4 +160,10 @@ impl Board {
             *(entry.1) = CellState::Empty;
         }
     }
+    pub fn cell_boundaries(&self, x: u8, y: u8) -> (f32, f32, f32) {
+        let cell_size = self.size / 3.0;
+        let cell_x = self.x + (x - 1) as f32 * cell_size;
+        let cell_y = self.y + (y - 1) as f32 * cell_size;
+        (cell_x, cell_y, cell_size)
+    }
 }
