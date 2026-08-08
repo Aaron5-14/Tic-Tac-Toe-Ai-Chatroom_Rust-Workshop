@@ -152,4 +152,12 @@ impl Board {
 
         CellState::Empty
     }
+    pub fn reset(&mut self) {
+        for entry in &mut self.state {
+            if let CellState::Empty = entry.1 {
+                continue;
+            }
+            *(entry.1) = CellState::Empty;
+        }
+    }
 }
