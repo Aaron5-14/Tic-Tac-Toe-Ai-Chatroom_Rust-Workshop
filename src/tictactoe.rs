@@ -91,5 +91,65 @@ impl Board {
             }
         }
     }
-    pub fn update_cell(cell: (u8, u8), state: CellState) {}
+    pub fn update_cell(&mut self, cell: (u8, u8), state: CellState) {
+        self.state.insert(cell, state);
+    }
+    pub fn check_winner(&self) -> CellState {
+        let mut rows: [(u8, u8); 3] = [(0, 0); 3]; // (Circle, Cross)
+        let mut cols: [(u8, u8); 3] = [(0, 0); 3];
+        let mut diags: [(u8, u8); 2] = [(0, 0); 2];
+        for (&(cell_x, cell_y), &cell_state) in &self.state {
+            match cell_state {
+                CellState::Empty => {
+                    continue;
+                }
+                CellState::Circle => {
+                    rows[(cell_y - 1) as usize].0 += 1;
+                    cols[(cell_x - 1) as usize].0 += 1;
+                    if cell_x == cell_y {
+                        diags[0].0 += 1;
+                    }
+                    if cell_x + cell_y == 4 {
+                        diags[1].0 += 1;
+                    }
+                }
+                CellState::Cross => {
+                    rows[(cell_y - 1) as usize].1 += 1;
+                    cols[(cell_x - 1) as usize].1 += 1;
+                    if cell_x == cell_y {
+                        diags[0].1 += 1;
+                    }
+                    if cell_x + cell_y == 4 {
+                        diags[1].1 += 1;
+                    }
+                }
+            }
+        }
+
+        for row in rows {
+            if row.0 == 3 {
+                return CellState::Circle;
+            } else if row.1 == 3 {
+                return CellState::Cross;
+            }
+        }
+
+        for col in cols {
+            if col.0 == 3 {
+                return CellState::Circle;
+            } else if col.1 == 3 {
+                return CellState::Cross;
+            }
+        }
+
+        for diag in diags {
+            if diag.0 == 3 {
+                return CellState::Circle;
+            } else if diag.1 == 3 {
+                return CellState::Cross;
+            }
+        }
+
+        CellState::Empty
+    }
 }
