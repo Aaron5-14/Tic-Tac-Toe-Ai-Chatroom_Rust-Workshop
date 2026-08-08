@@ -8,7 +8,8 @@ fn draw_cross(x: f32, y: f32, size: f32, thickness: f32, color: Color) {
     draw_line(x + size, y - size, x - size, y + size, thickness, color);
 }
 
-pub enum BlockState {
+#[derive(Debug, Copy, Clone)]
+pub enum CellState {
     Empty,
     Cross,
     Circle,
@@ -17,23 +18,29 @@ pub struct Board {
     x: f32,
     y: f32,
     size: f32,
-    pub state: HashMap<(u8, u8), BlockState>,
+    state: HashMap<(u8, u8), CellState>,
 }
 
 impl Board {
     pub fn new(x: f32, y: f32, size: f32) -> Board {
+        let mut temp: HashMap<(u8, u8), CellState> = HashMap::new();
+        for i in 1..4 {
+            for j in 1..4 {
+                temp.insert((i, j), CellState::Empty);
+            }
+        }
         Board {
             x,
             y,
             size,
-            state: HashMap::new(),
+            state: temp,
         }
     }
-    fn get_block_centers(&self, x: u8, y: u8) -> (f32, f32) {
-        let top_left_block: (f32, f32) = (self.x + self.size / 6.0, self.y + self.size / 6.0);
+    fn get_cell_centers(&self, x: u8, y: u8) -> (f32, f32) {
+        let top_left_cell: (f32, f32) = (self.x + self.size / 6.0, self.y + self.size / 6.0);
         (
-            (x - 1) as f32 * self.size / 3.0 + top_left_block.0,
-            (y - 1) as f32 * self.size / 3.0 + top_left_block.1,
+            (x - 1) as f32 * self.size / 3.0 + top_left_cell.0,
+            (y - 1) as f32 * self.size / 3.0 + top_left_cell.1,
         )
     }
     pub fn draw(&self) {
@@ -70,18 +77,19 @@ impl Board {
             DARKGRAY,
         );
 
-        for block in &self.state {
-            match block.1 {
-                BlockState::Circle => {
-                    let (circle_x, circle_y) = self.get_block_centers(block.0.0, block.0.1);
+        for (&(cell_x, cell_y), cell_state) in &self.state {
+            match cell_state {
+                CellState::Circle => {
+                    let (circle_x, circle_y) = self.get_cell_centers(cell_x, cell_y);
                     draw_circle_lines(circle_x, circle_y, self.size / 6.0 - 10.0, 5.0, DARKBLUE);
                 }
-                BlockState::Cross => {
-                    let (x, y) = self.get_block_centers(block.0.0, block.0.1);
-                    draw_cross(x, y, self.size / 3.0 - 10.0, 5.0, RED);
+                CellState::Cross => {
+                    let (cross_x, cross_y) = self.get_cell_centers(cell_x, cell_y);
+                    draw_cross(cross_x, cross_y, self.size / 3.0 - 10.0, 5.0, RED);
                 }
-                BlockState::Empty => {}
+                CellState::Empty => {}
             }
         }
     }
+    pub fn update_cell(cell: (u8, u8), state: CellState) {}
 }
