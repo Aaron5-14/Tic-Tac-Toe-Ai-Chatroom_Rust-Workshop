@@ -14,6 +14,7 @@ enum GameState {
     SinglePlayer,
     Menu(u8),
     Waiting,
+    ShowResult(bool),
 }
 
 fn window_conf() -> Conf {
@@ -31,10 +32,24 @@ async fn main() {
     let menu_options = ["Exit", "MultiPlayer", "Single Player vs AI"];
     let mut board = Board::new(BOARD_X, BOARD_Y, BOARD_SIZE);
     let waiting_text = "Finding Opponent...";
+    let mut win_text: &str;
     loop {
         let dt = get_frame_time();
 
         match &mut game_state {
+            GameState::ShowResult(won) => {
+                if *won {
+                    win_text = "You Won! :), Press Enter...";
+                } else {
+                    win_text = "You Lose! :(, Press Enter...";
+                }
+                clear_background(BLACK);
+                if is_key_pressed(KeyCode::Enter) {}
+                let dims = measure_text(win_text, None, 36, 1.0);
+                let text_x = WINDOW_W / 2.0 - dims.width / 2.0;
+                let text_y = WINDOW_H / 2.0;
+                draw_text(win_text, text_x, text_y, 24.0, WHITE);
+            }
             GameState::Waiting => {
                 clear_background(BLACK);
                 // TODO, get data from server that opponent found
@@ -63,7 +78,7 @@ async fn main() {
                     } else {
                         // TODO, MULTIPLAER
                         // Send ginal to server
-                        game_state = GameState::MultiPlayer;
+                        game_state = GameState::Waiting;
                     }
                 }
 
