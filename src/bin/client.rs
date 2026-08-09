@@ -33,14 +33,15 @@ async fn main() {
     let waiting_text = "Finding Opponent...";
     loop {
         let dt = get_frame_time();
+
         match &mut game_state {
             GameState::Waiting => {
                 clear_background(BLACK);
-
+                // TODO, get data from server that opponent found
+                // update gamestate
                 let dims = measure_text(waiting_text, None, 36, 1.0);
                 let text_x = WINDOW_W / 2.0 - dims.width / 2.0;
                 let text_y = WINDOW_H / 2.0;
-
                 draw_text(waiting_text, text_x, text_y, 24.0, WHITE);
             }
             GameState::Menu(sel) => {
