@@ -8,6 +8,8 @@ use std::thread;
 use tictactoe::Board;
 use tictactoe::CellState;
 use tictactoe_ai_chatroom_rust_workshop::tictactoe::{self};
+
+use crate::GameState::ShowResult;
 const WINDOW_W: f32 = 800.0;
 const WINDOW_H: f32 = 600.0;
 const BOARD_SIZE: f32 = 500.0;
@@ -33,9 +35,10 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf)]
 async fn main() {
     /* Run the game loop, stepping the simulation once per frame. */
-    let mut stream;
+    let mut stream = TcpStream::connect(SERVER).expect("could not connect to server");
     let mut writer;
     let (tx_mp, rx_mp) = mpsc::channel::<(bool, CellState)>(); //(turn, player_type) for multiplayer mode
+    let (tx_u8, rx_u8) = mpsc::channel::<[u8; 3]>();
     let mut line_reader;
     let mut reader;
     let mut game_state = GameState::Menu(0);
@@ -44,7 +47,7 @@ async fn main() {
     let waiting_text = "Finding Opponent...";
     let mut win_text: &str;
     let mut your_turn: bool = false; // TODO fix
-    let mut player_type: CellState; // TODO
+    let mut player_type: CellState = CellState::Empty; // TODO
     //let mut handle;
     loop {
         let dt = get_frame_time();
@@ -59,6 +62,7 @@ async fn main() {
                 clear_background(BLACK);
                 if is_key_pressed(KeyCode::Enter) {
                     // TODO
+                    game_state = GameState::Menu(0);
                 }
                 let dims = measure_text(win_text, None, 36, 1.0);
                 let text_x = WINDOW_W / 2.0 - dims.width / 2.0;
@@ -76,6 +80,16 @@ async fn main() {
                         your_turn = msg.0;
                         player_type = msg.1;
                         game_state = GameState::MultiPlayer;
+                        if !your_turn {
+                            // TODO
+                            let mut stream_cp = stream.try_clone().expect("clone failed in menu");
+                            let tx = tx_u8.clone();
+                            thread::spawn(move || {
+                                let buf = &mut [0, 0, 0];
+                                stream_cp.read(buf).expect("Read failed");
+                                tx.send(*buf).expect("Send fail");
+                            });
+                        }
                     }
                     Err(_) => {} // nothing waiting
                 }
@@ -103,7 +117,7 @@ async fn main() {
                     } else {
                         // TODO, MULTIPLAER
                         // Send ginal to server
-                        drop(stream);
+                        board.reset();
                         stream = TcpStream::connect(SERVER).expect("could not connect to server");
                         writer = stream.try_clone().expect("clone failed");
                         line_reader = BufReader::new(stream.try_clone().expect("clone failed"));
@@ -156,8 +170,69 @@ async fn main() {
             GameState::MultiPlayer => {
                 if your_turn {
                     // TODO
+                    if is_mouse_button_pressed(MouseButton::Left) {
+                        let (mx, my) = mouse_position();
+                        match board.cell_check(mx, my) {
+                            None => {}
+                            Some(cell) => {
+                                if let CellState::Empty = cell.1 {
+                                    board.update_cell(cell.0, player_type);
+                                    match board.check_winner() {
+                                        CellState::Cross => {
+                                            game_state = ShowResult(true);
+                                        }
+                                        CellState::Circle => {
+                                            game_state = ShowResult(true);
+                                        }
+                                        CellState::Empty => {
+                                            your_turn = false;
+                                            let mut stream_cp =
+                                                stream.try_clone().expect("clone failed in menu");
+                                            let tx = tx_u8.clone();
+                                            thread::spawn(move || {
+                                                let buf = &mut [0; 3];
+                                                buf[0] = cell.0.0;
+                                                buf[1] = cell.0.1;
+                                                buf[2] = match player_type {
+                                                    CellState::Circle => 1,
+                                                    CellState::Cross => 0,
+                                                    CellState::Empty => 2,
+                                                };
+                                                stream_cp.write_all(buf).expect("Write failed");
+                                                let buf = &mut [0, 0, 0];
+                                                stream_cp.read(buf).expect("Read failed");
+                                                tx.send(*buf).expect("Send fail");
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 } else {
                     // TODO
+                    match rx_u8.try_recv() {
+                        Ok(msg) => {
+                            let cs = if msg[2] == 1 {
+                                CellState::Circle
+                            } else {
+                                CellState::Cross
+                            };
+                            board.update_cell((msg[0], msg[1]), cs);
+                            match board.check_winner() {
+                                CellState::Cross => {
+                                    game_state = ShowResult(false);
+                                }
+                                CellState::Circle => {
+                                    game_state = ShowResult(false);
+                                }
+                                CellState::Empty => {
+                                    your_turn = true;
+                                }
+                            }
+                        }
+                        Err(_) => {}
+                    }
                 }
 
                 board.draw();
