@@ -180,9 +180,43 @@ async fn main() {
                                     match board.check_winner() {
                                         CellState::Cross => {
                                             game_state = ShowResult(true);
+                                            let mut stream_cp =
+                                                stream.try_clone().expect("clone failed in menu");
+                                            let tx = tx_u8.clone();
+                                            thread::spawn(move || {
+                                                let buf = &mut [0; 3];
+                                                buf[0] = cell.0.0;
+                                                buf[1] = cell.0.1;
+                                                buf[2] = match player_type {
+                                                    CellState::Circle => 1,
+                                                    CellState::Cross => 0,
+                                                    CellState::Empty => 2,
+                                                };
+                                                stream_cp.write_all(buf).expect("Write failed");
+                                                let buf = &mut [0, 0, 0];
+                                                stream_cp.read(buf).expect("Read failed");
+                                                tx.send(*buf).expect("Send fail");
+                                            });
                                         }
                                         CellState::Circle => {
                                             game_state = ShowResult(true);
+                                            let mut stream_cp =
+                                                stream.try_clone().expect("clone failed in menu");
+                                            let tx = tx_u8.clone();
+                                            thread::spawn(move || {
+                                                let buf = &mut [0; 3];
+                                                buf[0] = cell.0.0;
+                                                buf[1] = cell.0.1;
+                                                buf[2] = match player_type {
+                                                    CellState::Circle => 1,
+                                                    CellState::Cross => 0,
+                                                    CellState::Empty => 2,
+                                                };
+                                                stream_cp.write_all(buf).expect("Write failed");
+                                                let buf = &mut [0, 0, 0];
+                                                stream_cp.read(buf).expect("Read failed");
+                                                tx.send(*buf).expect("Send fail");
+                                            });
                                         }
                                         CellState::Empty => {
                                             your_turn = false;
