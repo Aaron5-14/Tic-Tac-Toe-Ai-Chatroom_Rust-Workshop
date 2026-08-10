@@ -57,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
                 println!("Client: match requested!");
 
                 let received = rx_from_matcher.recv().await.expect("receive failed");
-                println!("Client: Match found! received: {received:?}");
+                println!("Client: Match found!");
                 let mut writer_opponent = received.0;
                 let your_turn = received.1;
                 let player_type = received.2;
@@ -67,8 +67,12 @@ async fn main() -> anyhow::Result<()> {
                     .expect("Write faield");
                 loop {
                     let buf = &mut [0; 3];
-                    reader.read(buf).await.expect("read failed");
-                    writer_opponent.write(buf).await.expect("Write failed");
+                    reader.read_exact(buf).await.expect("read failed");
+                    println!("Client: Buffer after read: {buf:?}");
+                    if let Err(e) = writer_opponent.write(buf).await {
+                        eprintln!("Write error (client probably disconnected): {}", e);
+                        break; // exit the loop and let the task finish
+                    };
                 }
             } else if buf[0] == 2 {
                 //Single player

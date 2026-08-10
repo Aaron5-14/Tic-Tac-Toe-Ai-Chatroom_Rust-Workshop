@@ -63,6 +63,8 @@ async fn main() {
                 if is_key_pressed(KeyCode::Enter) {
                     // TODO
                     game_state = GameState::Menu(0);
+                    board.reset();
+                    stream = TcpStream::connect(SERVER).expect("could not connect to server");
                 }
                 let dims = measure_text(win_text, None, 36, 1.0);
                 let text_x = WINDOW_W / 2.0 - dims.width / 2.0;
